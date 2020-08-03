@@ -1,0 +1,4 @@
+project_id              = <GCP project id>
+region                  = <default region>
+credentials_file_path   = <credentials location>
+terraform_service_email = <terraform account>
