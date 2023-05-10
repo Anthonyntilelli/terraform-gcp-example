@@ -1,0 +1,39 @@
+# NOTE: Its better to keep user name and password in env variables instead of tfvars file.
+vsphere_user     = "<username>"
+vsphere_password = "<password>"
+vsphere_server   = "<vsphere server url>"
+
+virtual_machines = {
+  "server-a" = {
+    number_of_cpu                   = 2
+    ram_MB                          = 8192
+    primary_disk_additional_size_GB = 5
+    guest_id                        = "<guest id>"
+    network_interface               = "<network_interface>"
+    datastore_cluster               = "<datastore_cluster>"
+    compute_cluster                 = "<compute_cluster>"
+    data_center                     = "<data_center>"
+    folder_location                 = "<folder do not start with />"
+    template_machine                = "<template>"
+    ipv4_address                    = "<ipv4_address>"
+    netmask                         = <netmask>
+    nic_gateway                     = "<nic_gateway>"
+    dns_server_list                 = ["<DNS A ipv4_address>", "<DNS B ipv4_address>"]
+  },
+  "server-b" = {
+    number_of_cpu                   = 2
+    ram_MB                          = 8192
+    primary_disk_additional_size_GB = 5
+    guest_id                        = "<guest id>"
+    network_interface               = "<network_interface>"
+    datastore_cluster               = "<datastore_cluster>"
+    compute_cluster                 = "<compute_cluster>"
+    data_center                     = "<data_center>"
+    folder_location                 = "<folder do not start with />"
+    template_machine                = "<template>"
+    ipv4_address                    = "<ipv4_address>"
+    netmask                         = <netmask>
+    nic_gateway                     = "<nic_gateway>"
+    dns_server_list                 = ["<DNS A ipv4_address>", "<DNS B ipv4_address>"]
+  },
+}
