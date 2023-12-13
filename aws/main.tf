@@ -2,8 +2,6 @@
 CREATE:
  - ELB
  - CloudFront
- - EC2 auto scalling group -> instance template
- - RDS
  */
 
 resource "aws_vpc" "primary" {
@@ -84,9 +82,9 @@ resource "aws_security_group" "backend" {
   vpc_id      = aws_vpc.primary.id
 
   ingress {
-    description      = "PostGres port"
-    from_port        = 1486
-    to_port          = 1486
+    description      = "MySQL port"
+    from_port        = 3306
+    to_port          = 3306
     protocol         = "tcp"
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
@@ -134,4 +132,31 @@ resource "aws_autoscaling_group" "web_servers" {
     id      = aws_launch_template.web_servers.id
     version = "$Latest"
   }
+}
+
+resource "random_string" "password" {
+  length           = 20
+  special          = false
+}
+
+resource "aws_db_subnet_group" "group" {
+  name       = "main"
+  subnet_ids = [aws_subnet.frontend.id, aws_subnet.backend.id]
+
+  tags = {
+    Name = "My DB subnet group"
+  }
+}
+
+resource "aws_db_instance" "default" {
+  allocated_storage    = 10
+  db_name              = "backend"
+  engine               = "mysql"
+  engine_version       = "8.0.35"
+  instance_class       = "db.t3.micro"
+  username             = "admin"
+  db_subnet_group_name = aws_db_subnet_group.group.id
+  password             = random_string.password.result
+  skip_final_snapshot  = true
+  vpc_security_group_ids = [aws_security_group.backend.id]
 }
