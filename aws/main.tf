@@ -20,16 +20,16 @@ resource "aws_route" "primary" {
   gateway_id = aws_internet_gateway.primary.id
 }
 
-resource "aws_subnet" "frontend" {
+resource "aws_subnet" "a" {
   vpc_id     = aws_vpc.primary.id
   cidr_block = "10.0.1.0/24"
-  tags       = { Name = "front" }
+  tags       = { Name = "a" }
 }
 
-resource "aws_subnet" "backend" {
+resource "aws_subnet" "b" {
   vpc_id     = aws_vpc.primary.id
   cidr_block = "10.0.2.0/24"
-  tags       = { Name = "backend" }
+  tags       = { Name = "b" }
 }
 
 resource "aws_s3_bucket" "static_content" {
@@ -38,7 +38,7 @@ resource "aws_s3_bucket" "static_content" {
 }
 
 # TODO: UPDATE rules to restrict ip addresses
-resource "aws_security_group" "frontend" {
+resource "aws_security_group" "ec2" {
   name        = "frontend"
   description = "frontend security group"
   vpc_id      = aws_vpc.primary.id
@@ -75,7 +75,6 @@ resource "aws_security_group" "frontend" {
   tags = { Name = "frontend_security_group" }
 }
 
-# TODO: UPDATE rules to restrict ip addresses
 resource "aws_security_group" "backend" {
   name        = "backend"
   description = "backend security group"
@@ -86,10 +85,30 @@ resource "aws_security_group" "backend" {
     from_port        = 3306
     to_port          = 3306
     protocol         = "tcp"
+    cidr_blocks      = [aws_vpc.primary.cidr_block]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-    # cidr_blocks      = [aws_vpc.main.cidr_block]
-    # ipv6_cidr_blocks = [aws_vpc.main.ipv6_cidr_block]
+  }
+
+  tags = { Name = "backend_security_group" }
+}
+
+resource "aws_security_group" "elb" {
+  name        = "elb-gs"
+  description = "elb security group"
+  vpc_id      = aws_vpc.primary.id
+
+  ingress {
+    description      = "http from anywhere"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
   }
 
   egress {
@@ -100,7 +119,7 @@ resource "aws_security_group" "backend" {
     ipv6_cidr_blocks = ["::/0"]
   }
 
-  tags = { Name = "backend_security_group" }
+  tags = { Name = "elb_security_group" }
 }
 
 resource "aws_launch_template" "web_servers" {
@@ -116,7 +135,7 @@ resource "aws_launch_template" "web_servers" {
   user_data = filebase64("files/cluster_webpage.sh")
   network_interfaces {
     associate_public_ip_address = true
-    security_groups = [aws_security_group.frontend.id]
+    security_groups = [aws_security_group.ec2.id]
   }
 }
 
@@ -125,7 +144,7 @@ resource "aws_autoscaling_group" "web_servers" {
   max_size                  = 3
   min_size                  = 1
   desired_capacity          = 1
-  vpc_zone_identifier       = [aws_subnet.frontend.id]
+  vpc_zone_identifier       = [aws_subnet.a.id]
   health_check_grace_period = 500
 
   launch_template {
@@ -141,7 +160,7 @@ resource "random_string" "password" {
 
 resource "aws_db_subnet_group" "group" {
   name       = "main"
-  subnet_ids = [aws_subnet.frontend.id, aws_subnet.backend.id]
+  subnet_ids = [aws_subnet.a.id, aws_subnet.b.id]
 
   tags = {
     Name = "My DB subnet group"
@@ -159,4 +178,13 @@ resource "aws_db_instance" "default" {
   password             = random_string.password.result
   skip_final_snapshot  = true
   vpc_security_group_ids = [aws_security_group.backend.id]
+}
+
+resource "aws_lb" "test" {
+  name               = "frontend-elb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.elb.id]
+  subnets            = [aws_subnet.a.id, aws_subnet.b.id]
+
 }
