@@ -4,44 +4,20 @@ CREATE:
  - CloudFront
  */
 
-resource "aws_vpc" "primary" {
-  cidr_block = "10.0.0.0/16"
-  tags       = { Name = "primary" }
+module "network" {
+  source = "./modules/network"
 }
 
-resource "aws_internet_gateway" "primary" {
-  vpc_id = aws_vpc.primary.id
-  tags = { Name = "primary"}
-}
-
-resource "aws_route" "primary" {
-  route_table_id         = aws_vpc.primary.default_route_table_id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id = aws_internet_gateway.primary.id
-}
-
-resource "aws_subnet" "a" {
-  vpc_id     = aws_vpc.primary.id
-  cidr_block = "10.0.1.0/24"
-  tags       = { Name = "a" }
-}
-
-resource "aws_subnet" "b" {
-  vpc_id     = aws_vpc.primary.id
-  cidr_block = "10.0.2.0/24"
-  tags       = { Name = "b" }
-}
-
-resource "aws_s3_bucket" "static_content" {
-  bucket_prefix = "static"
-  tags          = { Name = "static_content" }
-}
+# resource "aws_s3_bucket" "static_content" {
+#   bucket_prefix = "static"
+#   tags          = { Name = "static_content" }
+# }
 
 # TODO: UPDATE rules to restrict ip addresses
 resource "aws_security_group" "ec2" {
   name        = "frontend"
   description = "frontend security group"
-  vpc_id      = aws_vpc.primary.id
+  vpc_id      = module.network.vpc.id
 
   ingress {
     description      = "http from VPC"
@@ -78,21 +54,21 @@ resource "aws_security_group" "ec2" {
 resource "aws_security_group" "backend" {
   name        = "backend"
   description = "backend security group"
-  vpc_id      = aws_vpc.primary.id
+  vpc_id      = module.network.vpc.id
 
   ingress {
-    description      = "MySQL port"
-    from_port        = 3306
-    to_port          = 3306
-    protocol         = "tcp"
-    cidr_blocks      = [aws_vpc.primary.cidr_block]
+    description = "MySQL port"
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = [module.network.vpc.cidr_block]
   }
 
   egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = { Name = "backend_security_group" }
@@ -101,14 +77,14 @@ resource "aws_security_group" "backend" {
 resource "aws_security_group" "elb" {
   name        = "elb-gs"
   description = "elb security group"
-  vpc_id      = aws_vpc.primary.id
+  vpc_id      = module.network.vpc.id
 
   ingress {
-    description      = "http from anywhere"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
+    description = "http from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -144,7 +120,7 @@ resource "aws_autoscaling_group" "web_servers" {
   max_size                  = 3
   min_size                  = 1
   desired_capacity          = 1
-  vpc_zone_identifier       = [aws_subnet.a.id]
+  vpc_zone_identifier       = [module.network.subnets[0].id]
   health_check_grace_period = 500
 
   launch_template {
@@ -153,6 +129,7 @@ resource "aws_autoscaling_group" "web_servers" {
   }
 }
 
+/*
 resource "random_string" "password" {
   length           = 20
   special          = false
@@ -162,9 +139,7 @@ resource "aws_db_subnet_group" "group" {
   name       = "main"
   subnet_ids = [aws_subnet.a.id, aws_subnet.b.id]
 
-  tags = {
-    Name = "My DB subnet group"
-  }
+  tags = { Name = "Subnet group" }
 }
 
 resource "aws_db_instance" "default" {
@@ -179,12 +154,12 @@ resource "aws_db_instance" "default" {
   skip_final_snapshot  = true
   vpc_security_group_ids = [aws_security_group.backend.id]
 }
+*/
 
 resource "aws_lb" "test" {
   name               = "frontend-elb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.elb.id]
-  subnets            = [aws_subnet.a.id, aws_subnet.b.id]
-
+  subnets            = [ for subnet in module.network.subnets: subnet.id ]
 }
