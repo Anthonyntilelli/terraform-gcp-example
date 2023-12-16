@@ -178,6 +178,11 @@ resource "aws_lb" "frontend" {
   subnets            = [for subnet in module.network.subnets : subnet.id]
 }
 
+resource "aws_autoscaling_attachment" "example" {
+  autoscaling_group_name = aws_autoscaling_group.web_servers.id
+  lb_target_group_arn    = aws_lb_target_group.frontend.id
+}
+
 resource "aws_lb_target_group" "frontend" {
   name     = "frontend-tg"
   port     = 80
