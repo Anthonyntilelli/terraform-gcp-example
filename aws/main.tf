@@ -106,12 +106,12 @@ resource "aws_launch_template" "web_servers" {
   instance_type                        = "t2.micro"
   tag_specifications {
     resource_type = "instance"
-    tags = { Name = "Frontend" }
+    tags          = { Name = "Frontend" }
   }
   user_data = filebase64("files/cluster_webpage.sh")
   network_interfaces {
     associate_public_ip_address = true
-    security_groups = [aws_security_group.ec2.id]
+    security_groups             = [aws_security_group.ec2.id]
   }
 }
 
@@ -127,6 +127,20 @@ resource "aws_autoscaling_group" "web_servers" {
     id      = aws_launch_template.web_servers.id
     version = "$Latest"
   }
+}
+
+resource "aws_autoscaling_policy" "web_servers" {
+  name        = "web_server_as_policy"
+  policy_type = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+
+    target_value = 75.0
+  }
+  autoscaling_group_name = aws_autoscaling_group.web_servers.name
 }
 
 /*
@@ -161,5 +175,5 @@ resource "aws_lb" "test" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.elb.id]
-  subnets            = [ for subnet in module.network.subnets: subnet.id ]
+  subnets            = [for subnet in module.network.subnets : subnet.id]
 }
