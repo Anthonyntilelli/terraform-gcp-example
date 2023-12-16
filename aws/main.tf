@@ -15,8 +15,8 @@ module "network" {
 
 # TODO: UPDATE rules to restrict ip addresses
 resource "aws_security_group" "ec2" {
-  name        = "frontend"
-  description = "frontend security group"
+  name        = "ec2"
+  description = "EC2 security group"
   vpc_id      = module.network.vpc.id
 
   ingress {
@@ -48,7 +48,7 @@ resource "aws_security_group" "ec2" {
     ipv6_cidr_blocks = ["::/0"]
   }
 
-  tags = { Name = "frontend_security_group" }
+  tags = { Name = "ec2_security_group" }
 }
 
 resource "aws_security_group" "backend" {
@@ -106,7 +106,7 @@ resource "aws_launch_template" "web_servers" {
   instance_type                        = "t2.micro"
   tag_specifications {
     resource_type = "instance"
-    tags          = { Name = "Frontend" }
+    tags          = { Name = "web_servers" }
   }
   user_data = filebase64("files/cluster_webpage.sh")
   network_interfaces {
@@ -170,10 +170,29 @@ resource "aws_db_instance" "default" {
 }
 */
 
-resource "aws_lb" "test" {
+resource "aws_lb" "frontend" {
   name               = "frontend-elb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.elb.id]
   subnets            = [for subnet in module.network.subnets : subnet.id]
+}
+
+resource "aws_lb_target_group" "frontend" {
+  name     = "frontend-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = module.network.vpc.id
+  slow_start = 300
+}
+
+resource "aws_lb_listener" "frontend" {
+  load_balancer_arn = aws_lb.frontend.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.frontend.arn
+  }
 }
