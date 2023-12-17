@@ -4,5 +4,5 @@ output "DNS_name" {
 
 output "database_password" {
   sensitive = true
-  value = module.backend.sql_password
+  value     = module.backend.sql_password
 }

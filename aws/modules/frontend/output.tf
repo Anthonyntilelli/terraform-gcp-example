@@ -4,6 +4,6 @@ output "frontend_sg_id" {
 }
 
 output "elb" {
-  value = aws_lb.frontend
+  value       = aws_lb.frontend
   description = "Frontend Load balancer"
 }
