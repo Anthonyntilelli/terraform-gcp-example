@@ -1,8 +1,3 @@
-/* CREATE
- - Provider
- - Backend
-*/
-
 terraform {
   required_providers {
     aws = {
@@ -15,7 +10,7 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = "tf-state-98076"
+    bucket = "<enter bucket here>"
     key    = "terraform.tfstate"
     region = "us-east-1"
   }
