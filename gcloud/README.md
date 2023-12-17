@@ -17,7 +17,7 @@ A practice project to implement a subset of [Example Google Infrastructure](http
     - compute.googleapis.com
     - iam.googleapis.com
 
-2. Create bucket for state and update main.tf
+2. Create bucket for state and update provider.tf
 
 3. Create service account for terraform as Project Editor.
 
