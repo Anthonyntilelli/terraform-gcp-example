@@ -13,8 +13,8 @@ variable "network_name" {
 variable "subnet_cidrs" {
   type        = list(object({ cidr = string, avz = string }))
   description = "Cidr block and availability_zone (must be in default Region) for subnets"
-  default     = [
-    {cidr = "10.0.1.0/24", avz = "us-east-1d"},
-    {cidr = "10.0.2.0/24", avz = "us-east-1a"}
+  default = [
+    { cidr = "10.0.1.0/24", avz = "us-east-1d" },
+    { cidr = "10.0.2.0/24", avz = "us-east-1a" }
   ]
 }
