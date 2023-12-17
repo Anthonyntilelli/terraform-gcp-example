@@ -1,43 +1,19 @@
-/*
-CREATE:
- - ELB
- - CloudFront
- */
-
 module "network" {
   source = "./modules/network"
 }
 
-# resource "aws_s3_bucket" "static_content" {
-#   bucket_prefix = "static"
-#   tags          = { Name = "static_content" }
-# }
-
-# TODO: UPDATE rules to restrict ip addresses
 resource "aws_security_group" "ec2" {
   name        = "ec2"
   description = "EC2 security group"
   vpc_id      = module.network.vpc.id
 
   ingress {
-    description      = "http from VPC"
+    description      = "http"
     from_port        = 80
     to_port          = 80
     protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-    # cidr_blocks      = [aws_vpc.main.cidr_block]
-    # ipv6_cidr_blocks = [aws_vpc.main.ipv6_cidr_block]
-  }
-  ingress {
-    description = "SSH from VPC"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    # cidr_blocks      = [aws_vpc.main.cidr_block]
-    # ipv6_cidr_blocks = [aws_vpc.main.ipv6_cidr_block]
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    security_groups  = [aws_security_group.elb.id]
+    cidr_blocks      = [module.network.vpc.cidr_block]
   }
 
   egress {
@@ -45,7 +21,6 @@ resource "aws_security_group" "ec2" {
     to_port          = 0
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
   }
 
   tags = { Name = "ec2_security_group" }
@@ -75,7 +50,7 @@ resource "aws_security_group" "backend" {
 }
 
 resource "aws_security_group" "elb" {
-  name        = "elb-gs"
+  name        = "elb-sg"
   description = "elb security group"
   vpc_id      = module.network.vpc.id
 
