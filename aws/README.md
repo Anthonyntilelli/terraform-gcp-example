@@ -1,4 +1,4 @@
-# Terraform and GCP
+# Terraform and AWS
 
 A practice project to implement a simple [3 teir web application](./aws_3_teir.drawio.svg) in aws.
 
