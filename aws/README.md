@@ -2,11 +2,6 @@
 
 A practice project to implement a simple [3 teir web application](./aws_3_teir.drawio.svg) in aws.
 
-## Fill in data
-
-1. Create a `terraform.tfvars` from example file.
-2. Fill in Require data in provider.tf
-
 ## Prerequisite
 
 1. Create AWS account.
